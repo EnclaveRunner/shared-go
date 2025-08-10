@@ -40,6 +40,8 @@ jobs:
           path: target-repo
           commit-message: "chore: sync shared config from shared-config repo"
           branch: update-shared-config
+          committer: "Enclave Bot <encalve-automation@marvin-fuchs.de>"
+          author: "Enclave Bot <encalve-automation@marvin-fuchs.de>"
           title: "chore: Sync shared config"
           body: |
             Automated update from shared-config repo.
