@@ -1,0 +1,49 @@
+name: Sync shared config to repos
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-repo:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - "EnclaveRunner/api-server"
+          - "EnclaveRunner/cli"
+
+    steps:
+      - name: Checkout shared-config repo
+        uses: actions/checkout@v4
+        with:
+          path: shared-files
+
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          token: ${{ secrets.BOT_PAT }}
+          path: target-repo
+
+      - name: Copy shared files to target repo
+        run: |
+          # Copy all files from shared directory
+          cp -rf shared-files/shared/* target-repo/
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.BOT_PAT }}
+          path: target-repo
+          commit-message: "chore: sync shared config from shared-config repo"
+          branch: update-shared-config
+          title: "chore: Sync shared config"
+          body: |
+            Automated update from shared-config repo.
+
+            This PR syncs the latest shared configuration files.
+          base: main
+          delete-branch: true
