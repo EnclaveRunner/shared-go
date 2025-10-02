@@ -14,6 +14,7 @@ jobs:
         repo:
           - "EnclaveRunner/api-server"
           - "EnclaveRunner/cli"
+          - "EnclaveRunner/shared-deps"
 
     steps:
       - name: Checkout shared-config repo
