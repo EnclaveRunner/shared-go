@@ -1,3 +1,4 @@
+
 name: Release
 on:
   workflow_run:
@@ -9,6 +10,8 @@ jobs:
   update-version:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       tag: ${{ steps.version.outputs.version }}
       should_release: ${{ steps.version.outputs.hasNextVersion }}
@@ -22,32 +25,42 @@ jobs:
         uses: thenativeweb/get-next-version@main
         id: version
         with:
-          tag_prefix: 'v'
+          prefix: "v"
+      - name: Tag commit
+        if: steps.version.outputs.hasNextVersion == 'true'
+        run: |
+          git config user.name "Enclave Bot"
+          git config user.email "enclave@marvin-fuchs.de"
+          git tag ${{ steps.version.outputs.version }}
+          git push origin ${{ steps.version.outputs.version }}
 
   release:
     runs-on: ubuntu-latest
     needs: [update-version]
     permissions:
       contents: write
+      actions: read
     if: needs.update-version.outputs.should_release == 'true'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Generate release notes
         id: release-notes
         run: |
-          LATEST_TAG="${{ needs.update-version.outputs.tag }}"
+          CURRENT_TAG="${{ needs.update-version.outputs.tag }}"
+
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
           # Get commits since last tag
-          if [ "$LATEST_TAG" != "v0.0.0" ]; then
-            COMMITS=$(git log --pretty=format:"- %s (%h)" $LATEST_TAG..HEAD)
+          if [ -n "$PREVIOUS_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..$CURRENT_TAG)
+            CONTRIBUTORS=$(git log --pretty=format:"%an" $PREVIOUS_TAG..$CURRENT_TAG | sort | uniq | sed 's/^/- /')
           else
-            COMMITS=$(git log --pretty=format:"- %s (%h)")
-          fi
-
-          # Get contributors since last tag
-          if [ "$LATEST_TAG" != "v0.0.0" ]; then
-            CONTRIBUTORS=$(git log --pretty=format:"%an" $LATEST_TAG..HEAD | sort | uniq | sed 's/^/- /')
-          else
-            CONTRIBUTORS=$(git log --pretty=format:"%an" | sort | uniq | sed 's/^/- /')
+            COMMITS=$(git log --pretty=format:"- %s (%h)" $CURRENT_TAG)
+            CONTRIBUTORS=$(git log --pretty=format:"%an" $CURRENT_TAG | sort | uniq | sed 's/^/- /')
           fi
 
           # Create release notes
@@ -65,7 +78,9 @@ jobs:
       - name: Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: 'release.tar.gz'
-          name: 'Release ${{ needs.update-version.outputs.tag }}'
-          tag: '${{ needs.update-version.outputs.tag }}'
-          body_path: ${{ steps.release-notes.outputs.release_nodes.md }}
+          name: "Release ${{ needs.update-version.outputs.tag }}"
+          tag: "${{ needs.update-version.outputs.tag }}"
+          bodyFile: ${{ steps.release-notes.outputs.release_notes_file }}
+          token: ${{ secrets.BOT_PAT }}
+          draft: false
+          prerelease: false
