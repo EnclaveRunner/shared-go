@@ -10,14 +10,18 @@ jobs:
   update-docs:
     name: Update-OpenAPI-Docs
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BOT_PAT }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.22"
 
       - name: Download dependencies
         run: go mod download
@@ -38,7 +42,7 @@ jobs:
           if [ "$(git status --porcelain)" != "" ]; then
             git add .
             git commit -m "Update OpenAPI docs [skip ci]"
-            git push
+            git push origin HEAD:${{ github.head_ref }}
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_PAT }}
