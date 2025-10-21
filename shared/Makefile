@@ -39,7 +39,7 @@ clean:
 
 # Generate OpenAPI server code from spec
 oapi:
-    go generate tools.go
+	go generate tools.go
 
 # Simulate CI tests
 verify:
