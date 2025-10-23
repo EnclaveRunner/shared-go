@@ -32,9 +32,55 @@ jobs:
 
       - name: Copy shared files to target repo
         run: |
+          # Extract repo name from matrix.repo (e.g., "cli" from "EnclaveRunner/cli")
+          REPO_NAME=$(echo "${{ matrix.repo }}" | cut -d'/' -f2)
+          EXCLUDE_FILE="shared-files/${REPO_NAME}.exclude"
+
           # Copy all files from shared directory including hidden files
           shopt -s dotglob
-          cp -rf shared-files/shared/* target-repo/
+
+          if [ -f "$EXCLUDE_FILE" ]; then
+            echo "Found exclude file: $EXCLUDE_FILE"
+
+            # Read exclude patterns into an array
+            mapfile -t EXCLUDE_PATTERNS < "$EXCLUDE_FILE"
+
+            # Copy files while respecting exclusions
+            cd shared-files/shared
+            find . -type f | while read -r file; do
+              # Remove leading ./
+              file="${file#./}"
+
+              # Check if file matches any exclude pattern
+              EXCLUDED=false
+              for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+                # Skip empty lines and comments
+                [[ -z "$pattern" || "$pattern" =~ ^[[:space:]]*# ]] && continue
+
+                # Check if file matches the pattern
+                if [[ "$file" == "$pattern" ]]; then
+                  EXCLUDED=true
+                  echo "Excluding: $file"
+                  break
+                fi
+              done
+
+              # Copy file if not excluded
+              if [ "$EXCLUDED" = false ]; then
+                mkdir -p "../../target-repo/$(dirname "$file")"
+                cp -f "$file" "../../target-repo/$file"
+              fi
+            done
+
+            # Copy directories (empty ones too)
+            find . -type d | while read -r dir; do
+              dir="${dir#./}"
+              [ -n "$dir" ] && mkdir -p "../../target-repo/$dir"
+            done
+          else
+            echo "No exclude file found for $REPO_NAME, copying all files"
+            cp -rf shared-files/shared/* target-repo/
+          fi
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
