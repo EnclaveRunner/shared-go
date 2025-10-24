@@ -15,6 +15,7 @@ jobs:
           - "EnclaveRunner/api-server"
           - "EnclaveRunner/cli"
           - "EnclaveRunner/shareddeps"
+          - "EnclaveRunner/artifact-registry"
 
     steps:
       - name: Checkout shared-config repo
