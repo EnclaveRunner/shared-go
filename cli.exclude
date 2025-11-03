@@ -1,4 +1,3 @@
 .github/workflows/promote-image.yml
-.github/workflows/ci.yml
 .github/workflows/sync-oapi.yml
 oapi-codegen-server.yml
