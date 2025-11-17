@@ -1,0 +1,3 @@
+.github/workflows/sync-oapi.yml
+oapi-codegen-server.yml
+oapi-codegen-client.yml
