@@ -1,3 +1,4 @@
 .github/workflows/promote-image.yml
 .github/workflows/sync-oapi.yml
 oapi-codegen-server.yml
+.golangci.yml
