@@ -16,6 +16,7 @@ jobs:
           - "EnclaveRunner/cli"
           - "EnclaveRunner/shareddeps"
           - "EnclaveRunner/artifact-registry"
+          - "EnclaveRunner/sdk-go"
 
     steps:
       - name: Checkout shared-config repo
